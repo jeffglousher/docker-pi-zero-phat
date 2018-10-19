@@ -1,0 +1,8 @@
+version: '2.1'
+
+services:
+  docker-pi-zero-phat:
+    image: docker-pi-zero-phat
+    build: .
+    ports:
+      - :
