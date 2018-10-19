@@ -49,13 +49,19 @@ def sbc_rpi0_envirophat_setup():
     
 
 def sbc_rpi0_envirophat():
-    temp=weather.temperature()
-    press=weather.pressure()
     readings=analog.read_all()
+    update={}
 
     soiltemp = therm200_convert_analog(readings[2])
     relhum = vghumid_convert_analog(readings[0])
     soilmoist = vh400_convert_analog(readings[1])
+
+    update["relhum"] = vghumid_convert_analog(readings[0])
+    update["soilmoist"] = vh400_convert_analog(readings[1])
+    update["soiltemp"] = therm200_convert_analog(readings[2])
+    update["temp"] = weather.temperature()
+    update["press"] = weather.pressure()
+
 
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/soiltemp/state",round(soiltemp,1), qos=1, retain=False)
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/soilmoist/state",round(soilmoist,1), qos=1, retain=False)
