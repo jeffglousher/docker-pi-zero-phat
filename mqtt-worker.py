@@ -21,7 +21,7 @@ try:
     input1=automationhat.input.one.is_on()
     print("automationhat.input.one.is_on() read successfully, automationphat is attached :-)")
     sbc_type = "automationphat"
-    cid = "plant-pi"
+    cid = "garage-pi"
 except:
     print("automationhat.input.one.is_on() read FAIL, automationphat is not attached or cannot be communicated with")
 
@@ -29,6 +29,21 @@ except:
 mqttc=mqtt.Client(client_id=cid)
 mqttc.connect(mqtt_server,1883,60)
 mqttc.loop_start()
+
+def on_message(client, userdata, message):
+    
+    if sbc_type == "envirophat":
+        if str(message.payload) == "ON":
+            leds.on()
+        elif str(message.payload) == "OFF":
+            leds.off()
+    if sbc_type == "automationphat":
+        if str(message.payload) == "ON":
+            pass
+        elif str(message.payload) == "OFF":
+            pass
+        
+mqttc.on_message=on_message #attach function to callback
 
 # Function definitions
 def sbc_rpi0_envirophat_setup():
@@ -44,14 +59,12 @@ def sbc_rpi0_envirophat_setup():
     cfg_phatheading = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Heading", "qos" : 1, "unit_of_measurement" : "°", "value_template": "{{ value_json.phatheading}}"}
     
     # Since I really wanted the converted values of the analog read I publish them after conversion directly 
-    ## ORIGINAL, to remove
-    cfg_soiltemp = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/soiltemp/state", "name": "Temperature", "qos" : 1, "unit_of_measurement" : "°C", "device_class" : "temperature"}
-    cfg_soilmoist = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/soilmoist/state", "name": "Moisture", "qos" : 1, "unit_of_measurement" : "%", "device_class" : "humidity"}
-    cfg_relhum = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/relhum/state", "name": "Humidity", "qos" : 1, "unit_of_measurement" : "%", "device_class" : "humidity"}
-    ## Discovery Config, to validate and to replace
-    #cfg_soiltemp = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Temperature", "qos" : 1, "unit_of_measurement" : "°C", "device_class" : "temperature", "value_template": "{{ value_json.soiltemp}}"}
-    #cfg_soilmoist = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Moisture", "qos" : 1, "unit_of_measurement" : "%", "device_class" : "humidity", "value_template": "{{ value_json.soilmoist}}"}
-    #cfg_relhum = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Humidity", "qos" : 1, "unit_of_measurement" : "%", "device_class" : "humidity", "value_template": "{{ value_json.relhum}}"}
+    cfg_soiltemp = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Soil Temperature", "qos" : 1, "unit_of_measurement" : "°C", "device_class" : "temperature", "value_template": "{{ value_json.soiltemp}}"}
+    cfg_soilmoist = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Soil Moisture", "qos" : 1, "unit_of_measurement" : "%", "device_class" : "humidity", "value_template": "{{ value_json.soilmoist}}"}
+    cfg_relhum = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Humidity", "qos" : 1, "unit_of_measurement" : "%", "device_class" : "humidity", "value_template": "{{ value_json.relhum}}"}
+
+    cfg_leds = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/leds/command", "name": "Leds", "qos" : 1}
+
 
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/phatlightrgb/config", json.dumps(cfg_phatlightrgb), qos=1, retain=True)
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/phatlight/config", json.dumps(cfg_phatlight), qos=1, retain=True)
@@ -66,6 +79,9 @@ def sbc_rpi0_envirophat_setup():
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/soiltemp/config", json.dumps(cfg_soiltemp), qos=1, retain=True)
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/soilmoist/config", json.dumps(cfg_soilmoist), qos=1, retain=True)
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/relhum/config", json.dumps(cfg_relhum), qos=1, retain=True)
+
+    (result,mid)=mqttc.publish(hass_autogen_topic + "/switch/" + cid + "/leds/config", json.dumps(cfg_leds), qos=1, retain=True)
+    mqttc.subscribe(hass_autogen_topic + "/switch/" + cid + "/leds/command")
     
 def sbc_rpi0_envirophat():
     update={}
@@ -82,40 +98,30 @@ def sbc_rpi0_envirophat():
     update["soilmoist"] = None
     update["relhum"] = None
 
-    readings = analog.read_all()
-
     update["phatlightrgb"] = light.rgb()
     update["phatlight"] = light.light()
     update["phattemperature"] = weather.temperature()
     update["phatpressure"] = weather.pressure()
     update["phataltitude"] = weather.altitude()
-    update["phatanalog"] = readings
-    update["phatmagnetometer"] = motion.magnetometer()
-    update["phataccelerometer"] = motion.accelerometer()
+    update["phatanalog"] = analog.read_all()
+    update["phatmagnetometer"] = str(motion.magnetometer())
+    update["phataccelerometer"] = str(motion.accelerometer())
     update["phatheading"] = motion.heading()
-    update["soiltemp"] = therm200_convert_analog(readings[2])
-    update["soilmoist"] = vh400_convert_analog(readings[1])
-    update["relhum"] = vghumid_convert_analog(readings[0])
+    update["soiltemp"] = therm200_convert_analog(update["phatanalog"][2])
+    update["soilmoist"] = vh400_convert_analog(update["phatanalog"][1])
+    update["relhum"] = vghumid_convert_analog(update["phatanalog"][0])
 
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/state", json.dumps(update), qos=1, retain=True)   
 
-    soiltemp = therm200_convert_analog(readings[2])
-    relhum = vghumid_convert_analog(readings[0])
-    soilmoist = vh400_convert_analog(readings[1])
-    (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/soiltemp/state",round(soiltemp,1), qos=1, retain=False)
-    (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/soilmoist/state",round(soilmoist,1), qos=1, retain=False)
-    (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/relhum/state",round(relhum,1), qos=1, retain=False)
-    
-    print(str(soiltemp) + " °C, Soil Temp")
+    return update
 
 def sbc_rpi0_automationphat_setup():
-    print("foo im setup!")
-    #(result,mid)=mqttc.publish("homeassistant_autogen/sensor/plant-pi/soiltemp/config", json.dumps(cfg_soiltemp), qos=1, retain=True)
-    #(result,mid)=mqttc.publish("homeassistant_autogen/sensor/plant-pi/soilmoist/config", json.dumps(cfg_soilmoist), qos=1, retain=True)
-    #(result,mid)=mqttc.publish("homeassistant_autogen/sensor/plant-pi/relhum/config", json.dumps(cfg_relhum), qos=1, retain=True)
+    cfg_phatanalog = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Analog", "qos" : 1, "unit_of_measurement" : "V", "value_template": "{{ value_json.phatanalog}}"}
 
 def sbc_rpi0_automationphat():
-    print("no measurements yet...")
+    update={}
+
+    return update
 
 def therm200_convert_analog(analog): #conversion from vegetronix.com for the THERM200
     return (analog * 41.67) - 40
@@ -147,9 +153,10 @@ try:
 
     while True:
         if sbc_type == "envirophat":
-            sbc_rpi0_envirophat()
+            details = sbc_rpi0_envirophat()
         if sbc_type == "automationphat":
-            sbc_rpi0_automationphat()
+            details = sbc_rpi0_automationphat()
+        print(str(time.time()) + " :")
         time.sleep(0.5)
 except Exception as e:
     print("Exception while running: " + repr(e))
