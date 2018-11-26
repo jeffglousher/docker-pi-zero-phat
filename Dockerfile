@@ -4,8 +4,6 @@ FROM resin/rpi-raspbian:stretch
 
 LABEL Name=docker-pi-zero-phat Version=0.0.1
 
-ADD mqtt-worker.py config.yml /
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     #    python3-dev \
@@ -22,5 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && pip3 install paho-mqtt --no-cache-dir \
     && apt-get autoremove && rm -rf /var/lib/apt/lists/*
 #&& apt-get remove --purge -y $BUILD_PACKAGES $(apt-mark showauto) && rm -rf /var/lib/apt/lists/*
+
+ADD mqtt-worker.py config.yml /
 
 CMD ["python3", "./mqtt-worker.py"]
