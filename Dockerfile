@@ -1,26 +1,27 @@
-# currently using this image as it supports Rpi0, will later test resin/raspberry-pi-python OR another option to keep python3 support with a small image on RPi0
+# currently using this image as it supports Rpi0
 FROM resin/rpi-raspbian:stretch
-#FROM resin/raspberry-pi-python:3-slim
+#FROM resin/raspberry-pi-python:3.7-stretch # testing to find a python3 imagage that supports arm6
 
 LABEL Name=docker-pi-zero-phat Version=0.0.1
 
+# enable container init system.
+ENV INITSYSTEM on
+
+# add the missing packages, it would be greate to switch to a python3 image where some of this can be skipped
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    #    python3-dev \
     python3-pip \
-    #    python3-virtualenv \
     libffi-dev \
     i2c-tools \
-    #    libraspberrypi-bin \
     python3-smbus \
     python3-rpi.gpio \
     python3-envirophat \
     python3-automationhat \
-    #    && rm -rf /var/lib/apt/lists/* \
     && pip3 install paho-mqtt --no-cache-dir \
     && apt-get autoremove && rm -rf /var/lib/apt/lists/*
-#&& apt-get remove --purge -y $BUILD_PACKAGES $(apt-mark showauto) && rm -rf /var/lib/apt/lists/*
 
+# add the python service and (future) config file
 ADD mqtt-worker.py config.yml /
 
+# command to start the python3 service
 CMD ["python3", "./mqtt-worker.py"]

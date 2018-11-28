@@ -5,7 +5,7 @@ import paho.mqtt.client as mqtt
 import logging
 import sys
 import signal
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 cid = "undefined-pi"
 mqtt_server = "dockerhost"
@@ -15,20 +15,21 @@ hass_autogen_topic = "homeassistant_autogen"
 # Test for computer & board types
 try:
     temp=weather.temperature()
-    logging.info("weather.temperature() read successfully, envirophat is attached :-)")
+    logging.debug("weather.temperature() read successfully, envirophat is attached :-)")
     sbc_type = "envirophat"
     cid = "plant-pi"
 except:
-       logging.warning("weather.temperature() read FAIL, envirophat is not attached or cannot be communicated with")
+       logging.debug("weather.temperature() read FAIL, envirophat is not attached or cannot be communicated with")
 
 try:
     input1=automationhat.input.one.is_on()
-    logging.info("automationhat.input.one.is_on() read successfully, automationphat is attached :-)")
+    logging.debug("automationhat.input.one.is_on() read successfully, automationphat is attached :-)")
     sbc_type = "automationphat"
     cid = "garage-pi"
 except:
-    logging.warning("automationhat.input.one.is_on() read FAIL, automationphat is not attached or cannot be communicated with")
+    logging.debug("automationhat.input.one.is_on() read FAIL, automationphat is not attached or cannot be communicated with")
 
+logging.info("The system detection is completed, this is client '%s' with an attached '%s'", cid, sbc_type)
 # configure and connect to MQTT server
 mqttc=mqtt.Client(client_id=cid)
 mqttc.connect(mqtt_server,1883,60)
@@ -42,7 +43,7 @@ def mqtt_bool(original_payload):
     else: return None
 
 def on_message(client, userdata, message):
-    logging.info(message.topic + " : " + message.payload.decode('UTF-8'))
+    logging.debug(message.topic + " : " + message.payload.decode('UTF-8'))
     if message.topic == hass_autogen_topic + "/switch/" + cid + "/leds/command":
         if mqtt_bool(message.payload):
             leds.on()
@@ -89,31 +90,31 @@ def add_standard_config_options(original_config):
 # Function definitions
 def sbc_rpi0_envirophat_setup():
     # configure MQTT config topics so that discovery can be used with Hass
-    cfg_phatlightrgb = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "LightRGB", "unit_of_measurement" : "RGB", "value_template": "{{ value_json.phatlightrgb}}"}
+    cfg_phatlightrgb = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "LightRGB", "unit_of_measurement" : "RGB", "value_template": "{{ value_json.phatlightrgb}}"}
     cfg_phatlightrgb = add_standard_config_options(cfg_phatlightrgb)
-    cfg_phatlight = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Light", "unit_of_measurement" : "Lux", "device_class" : "illuminance", "value_template": "{{ value_json.phatlight}}"}
+    cfg_phatlight = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Light", "unit_of_measurement" : "Lux", "device_class" : "illuminance", "value_template": "{{ value_json.phatlight}}"}
     cfg_phatlight = add_standard_config_options(cfg_phatlight)
-    cfg_phattemperature = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Temperature", "unit_of_measurement" : "°C", "device_class" : "temperature", "value_template": "{{ value_json.phattemperature}}"}
+    cfg_phattemperature = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Temperature", "unit_of_measurement" : "°C", "device_class" : "temperature", "value_template": "{{ value_json.phattemperature}}"}
     cfg_phattemperature = add_standard_config_options(cfg_phattemperature)
-    cfg_phatpressure = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Pressure", "unit_of_measurement" : "hPa", "device_class" : "pressure", "value_template": "{{ value_json.phatpressure}}"}
+    cfg_phatpressure = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Pressure", "unit_of_measurement" : "hPa", "device_class" : "pressure", "value_template": "{{ value_json.phatpressure}}"}
     cfg_phatpressure = add_standard_config_options(cfg_phatpressure)
-    cfg_phataltitude = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Altitude", "unit_of_measurement" : "m", "value_template": "{{ value_json.phataltitude}}"}
+    cfg_phataltitude = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Altitude", "unit_of_measurement" : "m", "value_template": "{{ value_json.phataltitude}}"}
     cfg_phataltitude = add_standard_config_options(cfg_phataltitude)
-    cfg_phatanalog = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Analog", "unit_of_measurement" : "V",  "value_template": "{{ value_json.phatanalog}}"}
+    cfg_phatanalog = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Analog", "unit_of_measurement" : "V",  "value_template": "{{ value_json.phatanalog}}"}
     cfg_phatanalog = add_standard_config_options(cfg_phatanalog)
-    cfg_phatmagnetometer = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Magnetometer", "unit_of_measurement" : "m", "value_template": "{{ value_json.phatmagnetometer}}"}
+    cfg_phatmagnetometer = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Magnetometer", "unit_of_measurement" : "m", "value_template": "{{ value_json.phatmagnetometer}}"}
     cfg_phatmagnetometer = add_standard_config_options(cfg_phatmagnetometer)
-    cfg_phataccelerometer = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Accelerometer", "unit_of_measurement" : "G", "value_template": "{{ value_json.phataccelerometer}}"}
+    cfg_phataccelerometer = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Accelerometer", "unit_of_measurement" : "G", "value_template": "{{ value_json.phataccelerometer}}"}
     cfg_phataccelerometer = add_standard_config_options(cfg_phataccelerometer)
-    cfg_phatheading = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Heading", "unit_of_measurement" : "°", "value_template": "{{ value_json.phatheading}}"}
+    cfg_phatheading = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Heading", "unit_of_measurement" : "°", "value_template": "{{ value_json.phatheading}}"}
     cfg_phatheading = add_standard_config_options(cfg_phatheading)
 
     # Since I really wanted the converted values of the analog read I publish them after conversion directly 
-    cfg_soiltemp = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "SoilTemperature", "unit_of_measurement" : "°C", "device_class" : "temperature", "value_template": "{{ value_json.soiltemp}}"}
+    cfg_soiltemp = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "SoilTemperature", "unit_of_measurement" : "°C", "device_class" : "temperature", "value_template": "{{ value_json.soiltemp}}"}
     cfg_soiltemp = add_standard_config_options(cfg_soiltemp)
-    cfg_soilmoist = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "SoilMoisture", "unit_of_measurement" : "%", "device_class" : "humidity", "value_template": "{{ value_json.soilmoist}}"}
+    cfg_soilmoist = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "SoilMoisture", "unit_of_measurement" : "%", "device_class" : "humidity", "value_template": "{{ value_json.soilmoist}}"}
     cfg_soilmoist = add_standard_config_options(cfg_soilmoist)
-    cfg_relhum = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Humidity", "unit_of_measurement" : "%", "device_class" : "humidity", "value_template": "{{ value_json.relhum}}"}
+    cfg_relhum = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Humidity", "unit_of_measurement" : "%", "device_class" : "humidity", "value_template": "{{ value_json.relhum}}"}
     cfg_relhum = add_standard_config_options(cfg_relhum)
     cfg_leds = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/leds/command", "name": "Leds", "optimistic" : "true"}
     cfg_leds = add_standard_config_options(cfg_leds)
@@ -152,32 +153,32 @@ def sbc_rpi0_envirophat():
     update["soilmoist"] = round(vh400_convert_analog(update["phatanalog"][1]), 1)
     update["relhum"] = round(vghumid_convert_analog(update["phatanalog"][0]), 1)
 
-    (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/state", json.dumps(update), qos=1, retain=True)   
+    (result,mid)=mqttc.publish(hass_autogen_topic + "/" + cid + "/state", json.dumps(update), qos=1, retain=True)   
 
     return update
 
 def sbc_rpi0_automationphat_setup():
-    cfg_phatanalog0 = {"state_topic": hass_autogen_topic + cid + "/state", "name": "Analog0", "unit_of_measurement" : "V", "value_template": "{{ value_json.phatanalog0 }}"}
+    cfg_phatanalog0 = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Analog0", "unit_of_measurement" : "V", "value_template": "{{ value_json.phatanalog0 }}"}
     cfg_phatanalog0 = add_standard_config_options(cfg_phatanalog0)
-    cfg_phatanalog1 = {"state_topic": hass_autogen_topic + cid + "/state", "name": "Analog1", "unit_of_measurement" : "V", "value_template": "{{ value_json.phatanalog1 }}"}
+    cfg_phatanalog1 = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Analog1", "unit_of_measurement" : "V", "value_template": "{{ value_json.phatanalog1 }}"}
     cfg_phatanalog1 = add_standard_config_options(cfg_phatanalog1)
-    cfg_phatanalog2 = {"state_topic": hass_autogen_topic + "/sensor/" + cid + "/state", "name": "Analog2", "unit_of_measurement" : "V", "value_template": "{{ value_json.phatanalog2 }}"}
+    cfg_phatanalog2 = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Analog2", "unit_of_measurement" : "V", "value_template": "{{ value_json.phatanalog2 }}"}
     cfg_phatanalog2 = add_standard_config_options(cfg_phatanalog2)
 
-    cfg_phatinput0 = {"state_topic": hass_autogen_topic + cid + "/state", "name": "Input0", "value_template": "{{ value_json.phatinput0 }}"}
+    cfg_phatinput0 = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Input0", "value_template": "{{ value_json.phatinput0 }}"}
     cfg_phatinput0 = add_standard_config_options(cfg_phatinput0)
-    cfg_phatinput1 = {"state_topic": hass_autogen_topic + cid + "/state", "name": "Input1", "value_template": "{{ value_json.phatinput1 }}"}
+    cfg_phatinput1 = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Input1", "value_template": "{{ value_json.phatinput1 }}"}
     cfg_phatinput1 = add_standard_config_options(cfg_phatinput1)
-    cfg_phatinput2 = {"state_topic": hass_autogen_topic + cid + "/state", "name": "Input2", "value_template": "{{ value_json.phatinput2 }}"}
+    cfg_phatinput2 = {"state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Input2", "value_template": "{{ value_json.phatinput2 }}"}
     cfg_phatinput2 = add_standard_config_options(cfg_phatinput2)
 
-    cfg_phatrelay = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/phatrelay/command", "state_topic": hass_autogen_topic + cid + "/state", "name": "Relay", "value_template": "{{ value_json.phatrelay }}"}
+    cfg_phatrelay = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/phatrelay/command", "state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Relay", "value_template": "{{ value_json.phatrelay }}"}
     cfg_phatrelay = add_standard_config_options(cfg_phatrelay)
-    cfg_phatoutput0 = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/phatoutput0/command", "state_topic": hass_autogen_topic + cid + "/state", "name": "Output0", "value_template": "{{ value_json.phatoutput0 }}"}
+    cfg_phatoutput0 = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/phatoutput0/command", "state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Output0", "value_template": "{{ value_json.phatoutput0 }}"}
     cfg_phatoutput0 = add_standard_config_options(cfg_phatoutput0)
-    cfg_phatoutput1 = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/phatoutput1/command", "state_topic": hass_autogen_topic + cid + "/state", "name": "Output1", "value_template": "{{ value_json.phatoutput1 }}"}
+    cfg_phatoutput1 = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/phatoutput1/command", "state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Output1", "value_template": "{{ value_json.phatoutput1 }}"}
     cfg_phatoutput1 = add_standard_config_options(cfg_phatoutput1)
-    cfg_phatoutput2 = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/phatoutput2/command", "state_topic": hass_autogen_topic + cid + "/state", "name": "Output2", "value_template": "{{ value_json.phatoutput2 }}"}
+    cfg_phatoutput2 = {"command_topic": hass_autogen_topic + "/switch/" + cid + "/phatoutput2/command", "state_topic": hass_autogen_topic + "/" + cid + "/state", "name": "Output2", "value_template": "{{ value_json.phatoutput2 }}"}
     cfg_phatoutput2 = add_standard_config_options(cfg_phatoutput2)
 
     (result,mid)=mqttc.publish(hass_autogen_topic + "/sensor/" + cid + "/phatanalog0/config", json.dumps(cfg_phatanalog0), qos=1, retain=True)
@@ -212,7 +213,7 @@ def sbc_rpi0_automationphat():
     update["phatoutput1"] = bool_state_format(automationhat.output.two.is_on())
     update["phatoutput2"] = bool_state_format(automationhat.output.three.is_on())
 
-    (result,mid)=mqttc.publish(hass_autogen_topic + cid + "/state", json.dumps(update), qos=1, retain=True)
+    (result,mid)=mqttc.publish(hass_autogen_topic + "/" + cid + "/state", json.dumps(update), qos=1, retain=True)
     
     return update
 
@@ -235,15 +236,13 @@ def vh400_convert_analog(analog): #conversion from vegetronix.com for the VH400
         return (62.5 * analog) - 87.5
 
 def sigterm_handler(signal, frame):
-    # save the state here or do whatever you want
-    logging.info('booyah! bye bye')
-    print("sigterm handler")
+    logging.info("sigterm handler")
     sys.exit(0)
 
 signal.signal(signal.SIGTERM, sigterm_handler)
 
 def sigint_handler(signal, frame):
-        print('You pressed Ctrl+C!')
+        logging.info('You pressed Ctrl+C!')
         sys.exit(0)
 
 signal.signal(signal.SIGINT, sigint_handler)
@@ -272,4 +271,3 @@ finally:
     mqttc.disconnect()
     logging.info("Program shutting down, MQTT client cleaned up and disconnected")
 logging.info("Goodnight...")
-print("after finally")
